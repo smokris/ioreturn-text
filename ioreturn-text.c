@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <IOKit/IOReturn.h>
@@ -11,12 +12,15 @@
  */
 char *getIOReturnText(IOReturn ret)
 {
+	if (err_get_code(ret) == err_get_code(kIOReturnSuccess))
+		return strdup("OK");
+
 	int sys = err_get_system(ret);
 	char *sysText;
 	if (sys == err_get_system(sys_iokit)) sysText = strdup("IOKit");
 	else
 		asprintf(&sysText, "unknown(0x%04x)", sys);
-	
+
 	int sub = err_get_sub(ret);
 	char *subText;
 	if      (sub == err_get_sub(sub_iokit_common))			subText = strdup("Common");
@@ -41,11 +45,10 @@ char *getIOReturnText(IOReturn ret)
 	else if (sub == err_get_sub(sub_iokit_vendor_specific))	subText = strdup("Vendor-specific");
 	else if (sub == err_get_sub(sub_iokit_reserved))		subText = strdup("Reserved");
 	else asprintf(&subText, "unknown(0x%04x)", sub);
-	
+
 	int err = err_get_code(ret);
 	char *errText;
-	if      (err == err_get_code(kIOReturnSuccess))				errText = strdup("OK");
-	else if (err == err_get_code(kIOReturnError))				errText = strdup("general error");
+	if		(err == err_get_code(kIOReturnError))				errText = strdup("general error");
 	else if (err == err_get_code(kIOReturnNoMemory))			errText = strdup("can't allocate memory");
 	else if (err == err_get_code(kIOReturnNoResources))			errText = strdup("resource shortage");
 	else if (err == err_get_code(kIOReturnIPCError))			errText = strdup("error during IPC");
@@ -99,9 +102,12 @@ char *getIOReturnText(IOReturn ret)
 	else if (err == err_get_code(kIOReturnInvalid))				errText = strdup("invalid");
 	else
 		asprintf(&errText, "unknown(0x%04x)", err);
-	
+
 	char *text;
 	asprintf(&text, "%s %s: %s", sysText, subText, errText);
+	free(sysText);
+	free(subText);
+	free(errText);
 	return text;
 }
 
